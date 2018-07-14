@@ -332,10 +332,19 @@ exit:
 	return;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+void pwr_state_check_handler(struct timer_list *t);
+void pwr_state_check_handler(struct timer_list *t)
+#else
 void pwr_state_check_handler(void *FunctionContext);
 void pwr_state_check_handler(void *FunctionContext)
+#endif
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+	_adapter *padapter = from_timer(padapter, t, pwrctrlpriv.pwr_state_check_timer);
+#else
 	_adapter *padapter = (_adapter *)FunctionContext;
+#endif
 	rtw_ps_cmd(padapter);
 }
 #endif
@@ -997,13 +1006,20 @@ exit:
 /*
  * This function is a timer handler, can't do any IO in it.
  */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+static void pwr_rpwm_timeout_handler(struct timer_list *t)
+#else
 static void pwr_rpwm_timeout_handler(void *FunctionContext)
+#endif
 {
 	PADAPTER padapter;
 	struct pwrctrl_priv *pwrpriv;
 
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+	padapter = from_timer(padapter, t, pwrctrlpriv.pwr_rpwm_timer);
+#else
 	padapter = (PADAPTER)FunctionContext;
+#endif
 	pwrpriv = &padapter->pwrctrlpriv;
 //	DBG_871X("+%s: rpwm=0x%02X cpwm=0x%02X\n", __func__, pwrpriv->rpwm, pwrpriv->cpwm);
 
@@ -1389,12 +1405,20 @@ _func_enter_;
 #ifdef CONFIG_LPS_RPWM_TIMER
 	pwrctrlpriv->brpwmtimeout = _FALSE;
 	_init_workitem(&pwrctrlpriv->rpwmtimeoutwi, rpwmtimeout_workitem_callback, NULL);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+	timer_setup(&pwrctrlpriv->pwr_rpwm_timer, pwr_rpwm_timeout_handler, 0);
+#else
 	_init_timer(&pwrctrlpriv->pwr_rpwm_timer, padapter->pnetdev, pwr_rpwm_timeout_handler, padapter);
+#endif
 #endif // CONFIG_LPS_RPWM_TIMER
 #endif // CONFIG_LPS_LCLK
 
 #ifdef PLATFORM_LINUX
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+	timer_setup(&(pwrctrlpriv->pwr_state_check_timer), pwr_state_check_handler, 0);
+#else
 	_init_timer(&(pwrctrlpriv->pwr_state_check_timer), padapter->pnetdev, pwr_state_check_handler, (u8 *)padapter);
+#endif
 #endif
 
 	#ifdef CONFIG_RESUME_IN_WORKQUEUE

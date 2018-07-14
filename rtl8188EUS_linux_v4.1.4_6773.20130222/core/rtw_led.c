@@ -25,9 +25,17 @@
 //		Callback function of LED BlinkTimer, 
 //		it just schedules to corresponding BlinkWorkItem/led_blink_hdl
 //
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+void BlinkTimerCallback(struct timer_list *t)
+#else
 void BlinkTimerCallback(void *data)
+#endif
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+	PLED_871x	 pLed = from_timer(pLed, t, BlinkTimer);
+#else
 	PLED_871x	 pLed = (PLED_871x)data;
+#endif
 	_adapter		*padapter = pLed->padapter;
 
 	//DBG_871X("%s\n", __FUNCTION__);
@@ -101,8 +109,11 @@ InitLed871x(
 	pLed->LedPin = LedPin;
 
 	ResetLedStatus(pLed);
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+	timer_setup(&(pLed->BlinkTimer), BlinkTimerCallback, 0);
+#else
 	_init_timer(&(pLed->BlinkTimer), padapter->pnetdev, BlinkTimerCallback, pLed);
+#endif
 
 #if defined(CONFIG_USB_HCI) || defined(CONFIG_SDIO_HCI)
 	_init_workitem(&(pLed->BlinkWorkItem), BlinkWorkItemCallback, pLed);

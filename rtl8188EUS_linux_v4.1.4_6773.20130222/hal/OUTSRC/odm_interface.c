@@ -537,7 +537,11 @@ ODM_InitializeTimer(
 	init_timer(pTimer);	
 #elif(DM_ODM_SUPPORT_TYPE & ODM_CE)
 	PADAPTER Adapter = pDM_Odm->Adapter;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+	timer_setup(pTimer, CallBackFunc, 0);
+#else
 	_init_timer(pTimer,Adapter->pnetdev,CallBackFunc,pDM_Odm);
+#endif
 #elif(DM_ODM_SUPPORT_TYPE & ODM_MP)
 	PADAPTER Adapter = pDM_Odm->Adapter;
 	PlatformInitializeTimer(Adapter, pTimer, CallBackFunc,pContext,szID);
